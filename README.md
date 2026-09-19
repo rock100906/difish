@@ -1,6 +1,6 @@
 # difish — 小鲸鱼桌面版 🐟
 
-把 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（`dsh`）装进一个真正的 Windows 桌面窗口。
+把dsh装进一个真正的 Windows 桌面窗口。
 
 不用开终端敲命令、不用手动管端口、不用记 URL——双击就进。
 
