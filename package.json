@@ -1,0 +1,50 @@
+{
+  "name": "difish",
+  "version": "0.1.1",
+  "description": "difish — 小鲸鱼桌面版：DeepSeek Harness 的 Electron 桌面壳（自绘标题栏 / 毛玻璃 / 托盘 / 全局快捷键 / 开机自启 / 完成通知）",
+  "main": "src/main/main.js",
+  "author": {
+    "name": "difish"
+  },
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^44.3.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "com.difish.desktop",
+    "productName": "difish",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "difish-settings-plugin",
+        "to": "difish-settings-plugin"
+      }
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}

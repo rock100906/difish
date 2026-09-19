@@ -1,0 +1,109 @@
+/* ============================================================
+   shell.css — difish 壳窗口样式
+   标题栏高度 TITLEBAR_HEIGHT 必须和 main.js 里的常量一致（38px）
+   ============================================================ */
+
+/* ---------- 主题变量（深色为默认） ---------- */
+:root {
+  --titlebar-bg: rgba(16, 19, 26, 0.78);   /* 半透明深墨：毛玻璃时透出窗口后的内容 */
+  --titlebar-fg: #e8e9ef;
+  --titlebar-fg-dim: #9aa0af;
+  --panel-bg: #16181e;
+  --panel-fg: #e8e9ef;
+  --panel-border: #2a2e38;
+  --accent: #4d6bfe;
+  --dot-grey: #6b7280;
+  --dot-cyan: #22d3ee;
+  --dot-red: #f87171;
+}
+html[data-theme="light"] {
+  --titlebar-bg: rgba(244, 246, 249, 0.82);
+  --titlebar-fg: #1f2a44;
+  --titlebar-fg-dim: #5b6b8c;
+  --panel-bg: #ffffff;
+  --panel-fg: #1f2a44;
+  --panel-border: #dfe5f0;
+}
+
+/* ---------- 全局 ---------- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--titlebar-fg);
+  background: transparent; /* 窗口背景由 main.js 的 backgroundMaterial 提供 */
+  user-select: none;
+}
+
+/* ---------- 标题栏 ---------- */
+#titlebar {
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--titlebar-bg);
+  -webkit-app-region: drag;        /* 整条可拖拽移动窗口 */
+  border-bottom: 1px solid rgba(128, 138, 160, 0.18);
+  padding-left: 12px;
+}
+#dragzone { display: flex; align-items: center; gap: 8px; min-width: 0; }
+#app-icon { width: 20px; height: 20px; border-radius: 5px; pointer-events: none; }
+#app-title { font-weight: 600; font-size: 13px; letter-spacing: .3px; }
+#app-version {
+  font-size: 10.5px;
+  color: var(--titlebar-fg-dim);
+  opacity: .75;
+  letter-spacing: .2px;
+  font-variant-numeric: tabular-nums;
+  -webkit-app-region: no-drag;
+  user-select: text;
+}
+
+/* 后端状态点：灰=启动中 青=就绪 红=出错 */
+#status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--dot-grey);
+  margin-left: 10px;
+  transition: background .2s ease;
+}
+#status-dot.cyan { background: var(--dot-cyan); box-shadow: 0 0 6px var(--dot-cyan); }
+#status-dot.red { background: var(--dot-red); box-shadow: 0 0 6px var(--dot-red); }
+#status-text { color: var(--titlebar-fg-dim); font-size: 12px; }
+
+/* ---------- 窗口按钮（dsh 风格：圆角、微光 hover、红色关闭） ---------- */
+#window-buttons {
+  display: flex; align-items: center; gap: 2px;
+  height: 100%;
+  padding: 0 8px 0 4px;
+  -webkit-app-region: no-drag;
+}
+.wbtn {
+  width: 40px; height: 28px;
+  border: none; background: transparent;
+  color: var(--titlebar-fg-dim);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease, box-shadow .14s ease;
+}
+.wbtn svg { display: block; }
+.wbtn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: var(--titlebar-fg);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.wbtn:active { transform: scale(0.92); }
+.wbtn.close:hover {
+  background: #e81123;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(232, 17, 35, 0.45);
+}
+/* 浅色主题下 hover 背景要深一点才可见 */
+html[data-theme="light"] .wbtn:hover {
+  background: rgba(15, 25, 50, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(15, 25, 50, 0.06);
+}
+
+/* ---------- 内容区 ---------- */
+#content { position: absolute; top: 38px; left: 0; right: 0; bottom: 0; }

@@ -1,0 +1,59 @@
+# ---------- 依赖 ----------
+node_modules/
+
+# ---------- 打包产物 ----------
+dist/
+release/
+out/
+*.asar
+
+# ---------- 运行数据 / 日志 ----------
+*.log
+ErrorLog/
+logs/
+
+# ---------- 私有：项目记忆库 ----------
+# dsh 记忆插件的数据目录，可能含个人笔记，绝不入库
+.dsh-project-memory/
+
+# ---------- 本地配置 ----------
+.dsh-home/
+difish-patch.yml
+*.local.yml
+.env
+.env.*
+
+# ---------- 备份文件 ----------
+*.bak
+*.bak-*
+*.orig
+*~
+
+# ---------- 编辑器 ----------
+.vscode/
+.idea/
+*.swp
+
+# ---------- 系统文件 ----------
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ---------- Electron 运行时 ----------
+# 这些只出现在「安装目录」里，源码仓库不需要（由 npm install 重新获取）
+*.exe
+*.dll
+*.pak
+*.bin
+*.dat
+locales/
+resources/
+chrome_*.pak
+icudtl.dat
+v8_context_snapshot.bin
+snapshot_blob.bin
+vk_swiftshader*
+vulkan-1.dll
+LICENSES.chromium.html
+LICENSE.electron.txt
+Uninstall*.exe

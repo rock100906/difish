@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>difish</title>
+  <link rel="stylesheet" href="shell.css">
+</head>
+<body>
+  <!-- ======== 自绘标题栏 ======== -->
+  <header id="titlebar">
+    <div id="dragzone">
+      <img id="app-icon" src="../../assets/title-icon.png" alt="" draggable="false">
+      <span id="app-title">difish</span>
+      <span id="app-version"></span>
+      <span id="status-dot" class="grey" title="后端状态"></span>
+      <span id="status-text">启动中</span>
+    </div>
+    <div id="window-buttons">
+      <button class="wbtn" id="btn-min" title="最小化">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+      </button>
+      <button class="wbtn" id="btn-max" title="最大化/还原">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4.5" y="4.5" width="15" height="15" rx="1"></rect></svg>
+      </button>
+      <button class="wbtn close" id="btn-close" title="关闭">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======== 内容区：dsh web 页面挂在这里（原生 view，不占 DOM） ======== -->
+  <main id="content"></main>
+
+  <script src="shell.js"></script>
+</body>
+</html>

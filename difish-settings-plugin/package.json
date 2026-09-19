@@ -1,0 +1,22 @@
+{
+  "name": "difish-settings",
+  "version": "0.1.0",
+  "description": "difish 桌面壳设置页：注入到 dsh 设置界面（背景/窗口/系统/后端），通过 window.difishBridge 调 difish 壳原生能力。",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./client": "./client/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "client": {
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-api-remotes"
+      ],
+      "platform": "web"
+    }
+  },
+  "license": "MIT"
+}
