@@ -37,23 +37,73 @@ function webProfileNodeModules() {
 }
 
 /**
+ * 目录内容指纹：递归收集 (相对路径, 大小, mtimeMs) 并排序后哈希。
+ * 用来判断"源码是否真的变了"——比逐个文件比对便宜，比只比目录 mtime 可靠。
+ */
+function dirFingerprint(dir) {
+  const crypto = require('node:crypto');
+  const parts = [];
+  const walk = (d, rel) => {
+    let entries;
+    try { entries = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+    for (const e of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+      // 记忆库是运行期数据，不参与"源码是否变化"的判断
+      if (e.name === '.dsh-project-memory') continue;
+      const r = rel ? `${rel}/${e.name}` : e.name;
+      const fp = path.join(d, e.name);
+      if (e.isDirectory()) { walk(fp, r); continue; }
+      try {
+        const st = fs.statSync(fp);
+        parts.push(`${r}|${st.size}|${st.mtimeMs}`);
+      } catch { /* 读不到就跳过 */ }
+    }
+  };
+  walk(dir, '');
+  return crypto.createHash('sha256').update(parts.join('\n')).digest('hex');
+}
+
+/** 把指纹写到目标目录旁的隐藏文件，下次启动用来比对 */
+function fingerprintPath(target) {
+  return path.join(path.dirname(target), '.difish-settings.fingerprint');
+}
+
+/**
  * 确保 difish-settings 就绪，返回 patch 文件路径（供 --patch 使用）。
+ *
+ * 注意：**内容没变就不重写**。
+ * 早期实现每次启动都 rmSync + cpSync，导致目标目录 mtime 每次都变 ——
+ * dsh 的 bundle 轮询会把它误判为"插件更新了"，白白触发一次热重载。
+ * 现在先比对指纹，一致就直接返回，避免无谓的文件系统扰动。
+ *
  * @param {string} userData difish 的 userData 目录
  */
 function ensureDifishPlugin(userData) {
   const src = pluginSourceDir();
   if (!src) return null;
 
-  // 1) 把插件拷贝到 web profile node_modules/difish-settings
   const target = path.join(webProfileNodeModules(), 'difish-settings');
+  const fpFile = fingerprintPath(target);
+
   try {
+    const srcFp = dirFingerprint(src);
+    let installedFp = null;
+    try { installedFp = fs.readFileSync(fpFile, 'utf8').trim(); } catch { /* 没装过 */ }
+
+    const targetExists = fs.existsSync(path.join(target, 'package.json'));
+
+    if (targetExists && installedFp === srcFp) {
+      // 内容和上次装的一致 —— 什么都不做，保持 mtime 不变
+      return writePatch(userData);
+    }
+
+    // 需要（重新）安装
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    // 删除旧的（可能是失效的 junction 或旧拷贝）
     try { fs.rmSync(target, { recursive: true, force: true, maxRetries: 3 }); } catch (e) {
       console.error('[difish] 删除旧 difish-settings 失败:', e.message);
     }
     fs.cpSync(src, target, { recursive: true, force: true });
-    console.log('[difish] difish-settings 插件已就绪:', target);
+    fs.writeFileSync(fpFile, srcFp, 'utf8');
+    console.log('[difish] difish-settings 插件已更新:', target);
   } catch (err) {
     console.error('[difish] 拷贝 difish-settings 插件失败:', err.message);
   }

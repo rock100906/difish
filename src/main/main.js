@@ -246,7 +246,14 @@ function createWindow() {
     console.error('[difish] 壳渲染进程退出:', details.reason, details.exitCode);
   });
 
-  mainWindow.on('ready-to-show', () => mainWindow.show());
+  mainWindow.on('ready-to-show', () => {
+    mainWindow.show();
+    // 窗口**真正显示之后**才让壳页面开始播开机动画 ——
+    // 否则页面在 show:false 期间就把 4 秒素材播完了，用户什么也看不到。
+    mainWindow.webContents
+      .executeJavaScript('window.__wvStartBoot && window.__wvStartBoot()')
+      .catch(() => { /* 忽略 */ });
+  });
   mainWindow.on('page-title-updated', (_e, title) => {
     console.log('[difish] 窗口标题变为:', title);
   });
@@ -321,8 +328,12 @@ function mountContentView(url) {
     // 页面加载完成后：应用上次保存的背景（如果有）、注入 UI 修正 CSS、同步透明窗口状态
     contentView.webContents.once('did-finish-load', () => {
       contentView.webContents.insertCSS(UI_FIX_CSS).catch(() => {});
+      // ⚠️ 必须用 setBackground 而不是 applyBackground：
+      // background.js 里的 `current` 默认是 type:'none'，只有 setBackground 会把
+      // 真正的设置灌进去。直接调 applyBackground 会走「无背景」分支 ——
+      // 表现就是「设置里明明选了壁纸，每次启动却都没有，得手动再选一次」。
       const b = settings.background || DEFAULT_SETTINGS.background;
-      if (b.type !== 'none') bg.applyBackground(contentView.webContents);
+      bg.setBackground(contentView.webContents, b);
       applyTransparency();
     });
   } catch (e) {
@@ -429,15 +440,70 @@ function rebuildTrayMenu() {
 // ---------------------------------------------------------------------------
 // 系统集成：开机自启 / 全局快捷键 / 通知
 // ---------------------------------------------------------------------------
-function setLaunchAtLogin(value) {
-  setSetting('launchAtLogin', value);
+
+/**
+ * 登录项参数。
+ *
+ * name —— 注册表里的「值名」。不指定时 Electron 用 AppUserModelId，
+ *         difish 是 com.difish.desktop，在「任务管理器 → 启动」里显示成一串包名，
+ *         很难认。显式给个友好名。
+ * path —— 开发模式（npm start）下 process.execPath 是 electron.exe，
+ *         必须把应用目录作为参数传进去，否则开机启动的是一个没有应用的 Electron。
+ */
+function loginItemOptions() {
+  const base = { name: 'difish' };
+  return app.isPackaged
+    ? { ...base, path: process.execPath }
+    : { ...base, path: process.execPath, args: [app.getAppPath()] };
+}
+
+/**
+ * 把开机自启设置应用到系统（幂等，可重复调用）。
+ *
+ * 为什么需要一个独立的"应用"函数：
+ *   早期实现只在用户切换开关时写注册表，**启动时从不重新应用**。
+ *   于是"设置里是 true、系统里却没有"这种不一致会永久保持 ——
+ *   比如从别的机器把 settings.json 带过来（注册表是机器本地的，不会跟着走），
+ *   或者注册表项被安全软件/系统优化工具清掉。
+ *   表现就是：开关看着是开的，开机就是不启动。
+ */
+function applyLaunchAtLogin(value) {
   try {
     app.setLoginItemSettings({
-      openAtLogin: value,
-      path: process.execPath,
+      openAtLogin: !!value,
+      ...loginItemOptions(),
     });
+    return true;
   } catch (e) {
-    console.error('[difish] 设置开机自启失败:', e.message);
+    console.error('[difish] 应用开机自启失败:', e.message);
+    return false;
+  }
+}
+
+/** 用户切换开关：存设置 + 立即应用 */
+function setLaunchAtLogin(value) {
+  setSetting('launchAtLogin', value);
+  applyLaunchAtLogin(value);
+}
+
+/**
+ * 启动时对账：设置说 true 但系统里没有 → 补上；说 false 但系统里有 → 清掉。
+ * 只在真的不一致时才动注册表，避免每次启动都白写一遍。
+ */
+function reconcileLaunchAtLogin() {
+  const want = !!settings.launchAtLogin;
+  let actual = false;
+  try {
+    actual = !!app.getLoginItemSettings(loginItemOptions()).openAtLogin;
+  } catch (e) {
+    // 读不到状态就按设置补一次 —— 宁可多写，不可漏写
+    console.warn('[difish] 读取开机自启状态失败，按设置补写:', e.message);
+    applyLaunchAtLogin(want);
+    return;
+  }
+  if (want !== actual) {
+    console.log(`[difish] 开机自启对账：设置=${want} 系统=${actual} → 修正为 ${want}`);
+    applyLaunchAtLogin(want);
   }
 }
 
@@ -726,6 +792,9 @@ if (!gotLock) {
     createTray();
     registerShortcuts();
     startCompletionWatcher();
+    // 开机自启对账：settings.json 可能是从别的机器带过来的，
+    // 而注册表项是机器本地的 —— 启动时补一次，避免"开关开着但不开机启动"
+    reconcileLaunchAtLogin();
     // 冷启动时先修复/应用被中断的 dsh 升级（必须在 bootBackend 之前：
     // 此刻没有任何 dsh 进程持有 node-pty/koffi 等原生文件，rename 必然成功）
     // 兜底：无论升级流程出什么问题（含卡死），都必须把后端拉起来，不能让界面一直空着。
