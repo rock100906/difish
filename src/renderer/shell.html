@@ -28,8 +28,36 @@
     </div>
   </header>
 
-  <!-- ======== 内容区：dsh web 页面挂在这里（原生 view，不占 DOM） ======== -->
-  <main id="content"></main>
+  <!-- ======== 内容区：dsh web 页面挂在这里（原生 view，不占 DOM） ========
+       注意：后端就绪后主进程会把原生 WebContentsView 挂到这个区域之上，
+       把 #boot 盖住。所以开机动画只负责「等待期」这一屏。 -->
+  <main id="content">
+    <!-- 开机动画：后端启动期间显示（10–90 秒），就绪后淡出。
+         视频是**可选素材**：把任意 mp4 放到 assets/boot.mp4 就会播放，
+         文件不存在时自动退到下面的纯 CSS 字标，不会白屏。
+         （本仓库不含任何视频文件，见 .gitignore） -->
+    <div id="boot">
+      <!-- 不加 autoplay：由 shell.js 在窗口真正显示后才 seek + 播放，
+           否则动画会在窗口还藏着的时候播完 -->
+      <video id="boot-video" muted playsinline preload="auto"
+             src="../../assets/boot.mp4" aria-hidden="true"></video>
+      <div id="boot-fallback" aria-hidden="true">
+        <span class="bf-cn">difish</span>
+        <span class="bf-en">DESKTOP FOR DEEPSEEK HARNESS</span>
+      </div>
+      <div id="boot-scan" aria-hidden="true"></div>
+      <!-- 底部：标签在上、全宽进度条在下。
+           右侧的数字是**真实已等待秒数**，不是编出来的百分比 ——
+           dsh 启动没有可读的进度，假装 80% 是在骗人。 -->
+      <div id="boot-foot">
+        <div class="boot-row">
+          <div class="boot-note" id="boot-note">正在启动后端…</div>
+          <div class="boot-elapsed" id="boot-elapsed"></div>
+        </div>
+        <div class="boot-bar" aria-hidden="true"><i></i></div>
+      </div>
+    </div>
+  </main>
 
   <script src="shell.js"></script>
 </body>
